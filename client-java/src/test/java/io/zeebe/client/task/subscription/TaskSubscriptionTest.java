@@ -48,10 +48,8 @@ import io.zeebe.client.ZeebeClientConfiguration;
 import io.zeebe.client.event.TaskEvent;
 import io.zeebe.client.impl.TasksClientImpl;
 import io.zeebe.client.impl.data.MsgPackConverter;
-import io.zeebe.client.task.PollableTaskSubscription;
-import io.zeebe.client.task.TaskHandler;
-import io.zeebe.client.task.TaskSubscription;
-import io.zeebe.client.task.impl.subscription.Subscriber;
+import io.zeebe.client.impl.job.*;
+import io.zeebe.client.impl.subscription.Subscriber;
 import io.zeebe.client.util.ClientRule;
 import io.zeebe.protocol.clientapi.ControlMessageType;
 import io.zeebe.protocol.clientapi.ErrorCode;
@@ -68,7 +66,7 @@ public class TaskSubscriptionTest
 {
     private static final int NUM_EXECUTION_THREADS = 2;
 
-    private static final TaskHandler DO_NOTHING = (c, t) ->
+    private static final JobHandler DO_NOTHING = (c, t) ->
     { };
 
     public ClientRule clientRule = new ClientRule(b -> b.numSubscriptionExecutionThreads(NUM_EXECUTION_THREADS));
@@ -109,8 +107,8 @@ public class TaskSubscriptionTest
             .handler(DO_NOTHING)
             .lockOwner("foo")
             .lockTime(10000L)
-            .taskType("bar")
-            .taskFetchSize(456)
+            .jobType("bar")
+            .jobFetchSize(456)
             .open();
 
         // then
@@ -138,7 +136,7 @@ public class TaskSubscriptionTest
             .handler(DO_NOTHING)
             .lockOwner("foo")
             .lockTime(10000L)
-            .taskType("bar")
+            .jobType("bar")
             .open();
 
         // when
@@ -165,8 +163,8 @@ public class TaskSubscriptionTest
         final PollableTaskSubscription subscription = clientRule.tasks().newPollableTaskSubscription(clientRule.getDefaultTopicName())
             .lockOwner("foo")
             .lockTime(10000L)
-            .taskType("bar")
-            .taskFetchSize(456)
+            .jobType("bar")
+            .jobFetchSize(456)
             .open();
 
         // then
@@ -214,7 +212,7 @@ public class TaskSubscriptionTest
         clientRule.tasks().newTaskSubscription(clientRule.getDefaultTopicName())
             .lockOwner("foo")
             .lockTime(10000L)
-            .taskType("bar")
+            .jobType("bar")
             .open();
     }
 
@@ -229,7 +227,7 @@ public class TaskSubscriptionTest
             .handler(DO_NOTHING)
             .lockOwner("foo")
             .lockTime(10000L)
-            .taskType("bar")
+            .jobType("bar")
             .open();
 
         // then
@@ -253,7 +251,7 @@ public class TaskSubscriptionTest
         clientRule.tasks().newTaskSubscription(clientRule.getDefaultTopicName())
             .handler(DO_NOTHING)
             .lockOwner("foo")
-            .taskType("bar")
+            .jobType("bar")
             .open();
     }
 
@@ -272,7 +270,7 @@ public class TaskSubscriptionTest
             .handler(DO_NOTHING)
             .lockOwner("foo")
             .lockTime(0L)
-            .taskType("bar")
+            .jobType("bar")
             .open();
     }
 
@@ -287,7 +285,7 @@ public class TaskSubscriptionTest
             .handler(DO_NOTHING)
             .lockOwner("foo")
             .lockTime(Duration.ofDays(10))
-            .taskType("bar")
+            .jobType("bar")
             .open();
 
         // then
@@ -307,7 +305,7 @@ public class TaskSubscriptionTest
         clientRule.tasks().newPollableTaskSubscription(clientRule.getDefaultTopicName())
             .lockOwner("foo")
             .lockTime(Duration.ofDays(10))
-            .taskType("bar")
+            .jobType("bar")
             .open();
 
         // then
@@ -337,7 +335,7 @@ public class TaskSubscriptionTest
             .handler(DO_NOTHING)
             .lockOwner("foo")
             .lockTime(10000L)
-            .taskType("bar")
+            .jobType("bar")
             .open();
     }
 
@@ -353,7 +351,7 @@ public class TaskSubscriptionTest
                 .handler(handler)
                 .lockOwner("owner")
                 .lockTime(10000L)
-                .taskType("type")
+                .jobType("type")
                 .open();
 
         final RemoteAddress clientAddress = getSubscribeRequests().findFirst().get().getSource();
@@ -413,7 +411,7 @@ public class TaskSubscriptionTest
                 .handler(handler1)
                 .lockOwner("foo")
                 .lockTime(10000L)
-                .taskType("type1")
+                .jobType("type1")
                 .open();
 
         final RecordingTaskHandler handler2 = new RecordingTaskHandler();
@@ -421,7 +419,7 @@ public class TaskSubscriptionTest
             .handler(handler2)
             .lockOwner("bar")
             .lockTime(10000L)
-            .taskType("type2")
+            .jobType("type2")
             .open();
 
         final RemoteAddress clientAddress = getSubscribeRequests().findFirst().get().getSource();
@@ -459,7 +457,7 @@ public class TaskSubscriptionTest
         final PollableTaskSubscription subscription = clientRule.tasks().newPollableTaskSubscription(clientRule.getDefaultTopicName())
                 .lockOwner("foo")
                 .lockTime(10000L)
-                .taskType("bar")
+                .jobType("bar")
                 .open();
 
         final RemoteAddress clientAddress = getSubscribeRequests().findFirst().get().getSource();
@@ -492,7 +490,7 @@ public class TaskSubscriptionTest
                 .handler(handler)
                 .lockOwner("foo")
                 .lockTime(10000L)
-                .taskType("bar")
+                .jobType("bar")
                 .open();
 
         final RemoteAddress clientAddress = getSubscribeRequests().findFirst().get().getSource();
@@ -519,7 +517,7 @@ public class TaskSubscriptionTest
                 .handler((c, t) -> c.complete(t).payload("{\"a\": 1}").execute())
                 .lockOwner("foo")
                 .lockTime(10000L)
-                .taskType("bar")
+                .jobType("bar")
                 .open();
 
         final RemoteAddress eventSource = getSubscribeRequests().findFirst().get().getSource();
@@ -554,7 +552,7 @@ public class TaskSubscriptionTest
                 .handler((c, t) -> c.complete(t).payload("{\"a\": 1}").execute())
                 .lockOwner("foo")
                 .lockTime(10000L)
-                .taskType("bar")
+                .jobType("bar")
                 .open();
 
         final RemoteAddress eventSource = getSubscribeRequests().findFirst().get().getSource();
@@ -589,7 +587,7 @@ public class TaskSubscriptionTest
                 .handler((c, t) -> c.complete(t).withoutPayload().execute())
                 .lockOwner("foo")
                 .lockTime(10000L)
-                .taskType("bar")
+                .jobType("bar")
                 .open();
 
         final RemoteAddress eventSource = getSubscribeRequests().findFirst().get().getSource();
@@ -633,7 +631,7 @@ public class TaskSubscriptionTest
                 })
                 .lockOwner("foo")
                 .lockTime(10000L)
-                .taskType("bar")
+                .jobType("bar")
                 .open();
 
         final RemoteAddress clientAddress = getSubscribeRequests().findFirst().get().getSource();
@@ -666,8 +664,8 @@ public class TaskSubscriptionTest
             .handler((c, t) -> c.complete(t).withoutPayload().execute())
             .lockOwner("owner")
             .lockTime(1000L)
-            .taskFetchSize(5)
-            .taskType("foo")
+            .jobFetchSize(5)
+            .jobType("foo")
             .open();
 
         // when
@@ -717,8 +715,8 @@ public class TaskSubscriptionTest
             .handler(handler)
             .lockOwner("owner")
             .lockTime(1000L)
-            .taskFetchSize(taskCapacity)
-            .taskType("foo")
+            .jobFetchSize(taskCapacity)
+            .jobType("foo")
             .open();
 
         final RemoteAddress clientAddress = broker.getReceivedControlMessageRequests().get(0).getSource();
@@ -757,7 +755,7 @@ public class TaskSubscriptionTest
         final int subscriptionCapacity = 8;
         final AtomicInteger failedTasks = new AtomicInteger(0);
 
-        final TaskHandler taskHandler = (c, t) ->
+        final JobHandler taskHandler = (c, t) ->
         {
             failedTasks.incrementAndGet();
             throw new RuntimeException("foo");
@@ -767,8 +765,8 @@ public class TaskSubscriptionTest
             .handler(taskHandler)
             .lockOwner("owner")
             .lockTime(1000L)
-            .taskFetchSize(subscriptionCapacity)
-            .taskType("foo")
+            .jobFetchSize(subscriptionCapacity)
+            .jobType("foo")
             .open();
 
         final RemoteAddress clientAddress = broker.getReceivedControlMessageRequests().get(0).getSource();
@@ -803,7 +801,7 @@ public class TaskSubscriptionTest
             .handler(DO_NOTHING)
             .lockOwner("foo")
             .lockTime(10000L)
-            .taskType("bar")
+            .jobType("bar")
             .open();
 
         // when
@@ -865,8 +863,8 @@ public class TaskSubscriptionTest
                 .handler(handler)
                 .lockOwner("owner")
                 .lockTime(10000L)
-                .taskFetchSize(subscriptionCapacity)
-                .taskType("type")
+                .jobFetchSize(subscriptionCapacity)
+                .jobType("type")
                 .open();
 
         final RemoteAddress clientAddress = getSubscribeRequests().findFirst().get().getSource();
@@ -954,7 +952,7 @@ public class TaskSubscriptionTest
         return r -> r.eventType() == EventType.TASK_EVENT && "FAIL".equals(r.getCommand().get("state"));
     }
 
-    protected class WaitingTaskHandler implements TaskHandler
+    protected class WaitingTaskHandler implements JobHandler
     {
         protected AtomicInteger numHandledEvents = new AtomicInteger(0);
         protected AtomicInteger numWaitingThreads = new AtomicInteger(0);

@@ -25,9 +25,9 @@ import org.junit.rules.RuleChain;
 
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.cmd.ClientCommandRejectedException;
+import io.zeebe.client.impl.workflow.impl.WorkflowInstanceEventImpl;
 import io.zeebe.client.util.ClientRule;
 import io.zeebe.client.util.Events;
-import io.zeebe.client.workflow.impl.WorkflowInstanceEventImpl;
 import io.zeebe.test.broker.protocol.brokerapi.ExecuteCommandRequest;
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
 
@@ -54,7 +54,7 @@ public class CancelWorkflowInstanceTest
     public void shouldCancelWorkflowInstance()
     {
         // given
-        final WorkflowInstanceEventImpl event = Events.exampleWorfklowInstance();
+        final WorkflowInstanceRecordImpl event = Events.exampleWorfklowInstance();
         event.setKey(2L);
 
         brokerRule.onWorkflowRequestRespondWith(2L)
@@ -91,7 +91,7 @@ public class CancelWorkflowInstanceTest
     public void shouldRejectCancelWorkflowInstance()
     {
         // given
-        final WorkflowInstanceEventImpl event = Events.exampleWorfklowInstance();
+        final WorkflowInstanceRecordImpl event = Events.exampleWorfklowInstance();
         event.setKey(2L);
 
         brokerRule.onWorkflowRequestRespondWith(2L)

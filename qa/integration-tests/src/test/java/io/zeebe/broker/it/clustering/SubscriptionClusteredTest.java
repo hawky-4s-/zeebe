@@ -24,8 +24,8 @@ import java.util.List;
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.subscription.RecordingEventHandler;
 import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.task.impl.CreateTaskCommandImpl;
-import io.zeebe.client.topic.Topic;
+import io.zeebe.client.impl.job.impl.CreateTaskCommandImpl;
+import io.zeebe.client.impl.topic.Topic;
 import io.zeebe.test.util.AutoCloseableRule;
 import org.junit.Before;
 import org.junit.Rule;
@@ -108,7 +108,7 @@ public class SubscriptionClusteredTest
     protected void createTaskOnPartition(String topic, int partition)
     {
         final CreateTaskCommandImpl createTaskCommand = (CreateTaskCommandImpl) client.tasks().create(topic, "baz");
-        createTaskCommand.getEvent().setPartitionId(partition);
+        createTaskCommand.getCommand().setPartitionId(partition);
         createTaskCommand.execute();
     }
 }

@@ -33,9 +33,9 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.event.impl.TopicSubscriberGroup;
 import io.zeebe.client.impl.ZeebeClientImpl;
-import io.zeebe.client.task.impl.subscription.Subscriber;
+import io.zeebe.client.impl.subscription.Subscriber;
+import io.zeebe.client.impl.subscription.topic.TopicSubscriberGroup;
 import io.zeebe.client.util.ClientRule;
 import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.test.broker.protocol.brokerapi.ExecuteCommandRequest;

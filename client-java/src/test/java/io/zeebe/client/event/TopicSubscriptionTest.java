@@ -31,7 +31,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import io.zeebe.client.task.impl.subscription.SubscriptionManager;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -39,9 +38,10 @@ import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 
 import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.event.impl.TopicSubscriberGroup;
-import io.zeebe.client.event.impl.TopicSubscriptionBuilderImpl;
 import io.zeebe.client.impl.ZeebeClientImpl;
+import io.zeebe.client.impl.subscription.SubscriptionManager;
+import io.zeebe.client.impl.subscription.topic.ManagedTopicSubscriptionBuilderImpl;
+import io.zeebe.client.impl.subscription.topic.TopicSubscriberGroup;
 import io.zeebe.client.util.ClientRule;
 import io.zeebe.protocol.clientapi.ControlMessageType;
 import io.zeebe.protocol.clientapi.ErrorCode;
@@ -885,7 +885,7 @@ public class TopicSubscriptionTest
                 .done()
             .registerControlled();
 
-        final TopicSubscriptionBuilderImpl builder = (TopicSubscriptionBuilderImpl) client.topics().newSubscription(clientRule.getDefaultTopicName())
+        final ManagedTopicSubscriptionBuilderImpl builder = (ManagedTopicSubscriptionBuilderImpl) client.topics().newSubscription(clientRule.getDefaultTopicName())
             .handler(DO_NOTHING)
             .name("foo");
 

@@ -20,11 +20,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.zeebe.client.impl.job.impl.subscription.*;
+import io.zeebe.client.impl.subscription.*;
+import io.zeebe.client.impl.subscription.job.JobSubscriberGroup;
 import org.junit.Test;
-
-import io.zeebe.client.task.impl.subscription.EventSubscribers;
-import io.zeebe.client.task.impl.subscription.SubscriptionExecutor;
-import io.zeebe.client.task.impl.subscription.TaskSubscriberGroup;
 
 public class TaskExecutorTest
 {
@@ -34,7 +33,7 @@ public class TaskExecutorTest
         // given
         final EventSubscribers subscriptions = new EventSubscribers();
 
-        final TaskSubscriberGroup subscription = mock(TaskSubscriberGroup.class);
+        final JobSubscriberGroup subscription = mock(JobSubscriberGroup.class);
         when(subscription.isManagedGroup()).thenReturn(true);
         when(subscription.poll()).thenReturn(34);
         subscriptions.addGroup(subscription);

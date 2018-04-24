@@ -31,8 +31,8 @@ import io.zeebe.client.TasksClient;
 import io.zeebe.client.TopicsClient;
 import io.zeebe.client.WorkflowsClient;
 import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.clustering.impl.TopologyResponse;
 import io.zeebe.client.impl.ZeebeClientImpl;
+import io.zeebe.client.impl.clustering.*;
 import io.zeebe.transport.ClientTransport;
 
 public class ClientRule extends ExternalResource
@@ -77,15 +77,15 @@ public class ClientRule extends ExternalResource
         client.topics().create(DEFAULT_TOPIC, 1).execute();
         waitUntilTopicsExists(DEFAULT_TOPIC);
 
-        final TopologyResponse topology = client.requestTopology().execute();
+        final TopologyImpl topology = client.requestTopology().execute();
 
         defaultPartition = -1;
-        final List<TopologyBroker> topologyBrokers = topology.getBrokers();
+        final List<BrokerInfoImpl> topologyBrokers = topology.getBrokers();
 
-        for (TopologyBroker leader : topologyBrokers)
+        for (BrokerInfoImpl leader : topologyBrokers)
         {
-            final List<BrokerPartitionState> partitions = leader.getPartitions();
-            for (BrokerPartitionState brokerPartitionState : partitions)
+            final List<PartitionInfoImpl> partitions = leader.getPartitions();
+            for (PartitionInfoImpl brokerPartitionState : partitions)
             {
                 if (DEFAULT_TOPIC.equals(brokerPartitionState.getTopicName())
                     && brokerPartitionState.isLeader())

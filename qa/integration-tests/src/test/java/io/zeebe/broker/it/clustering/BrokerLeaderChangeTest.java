@@ -25,10 +25,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.client.TasksClient;
 import io.zeebe.client.TopicsClient;
-import io.zeebe.client.clustering.impl.TopologyBroker;
 import io.zeebe.client.event.TaskEvent;
 import io.zeebe.client.event.TopicSubscription;
-import io.zeebe.client.task.TaskSubscription;
+import io.zeebe.client.impl.clustering.BrokerInfoImpl;
+import io.zeebe.client.impl.job.TaskSubscription;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.transport.SocketAddress;
 import org.junit.Before;
@@ -69,7 +69,7 @@ public class BrokerLeaderChangeTest
         // given
         clusteringRule.createTopic(clientRule.getDefaultTopic(), 1, 3);
 
-        final TopologyBroker leaderForPartition = clusteringRule.getLeaderForPartition(1);
+        final BrokerInfoImpl leaderForPartition = clusteringRule.getLeaderForPartition(1);
         final SocketAddress leaderAddress = leaderForPartition.getSocketAddress();
 
         final TaskEvent taskEvent = taskClient.create(clientRule.getDefaultTopic(), TASK_TYPE)

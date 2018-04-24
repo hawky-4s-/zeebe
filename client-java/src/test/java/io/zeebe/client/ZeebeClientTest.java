@@ -35,14 +35,13 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TestName;
-
-import io.zeebe.client.clustering.impl.ClientTopologyManager;
 import io.zeebe.client.cmd.ClientCommandRejectedException;
 import io.zeebe.client.cmd.ClientException;
 import io.zeebe.client.event.TaskEvent;
 import io.zeebe.client.event.TopicSubscription;
 import io.zeebe.client.event.impl.TaskEventImpl;
 import io.zeebe.client.impl.ZeebeClientImpl;
+import io.zeebe.client.impl.clustering.ClientTopologyManager;
 import io.zeebe.client.impl.data.MsgPackConverter;
 import io.zeebe.client.util.Events;
 import io.zeebe.protocol.Protocol;
@@ -166,7 +165,7 @@ public class ZeebeClientTest
         // when then
         for (int i = 0; i < clientMaxRequests; i++)
         {
-            client.tasks().create(topic, "bar").executeAsync();
+            client.tasks().create(topic, "bar").send();
         }
 
     }
@@ -187,7 +186,7 @@ public class ZeebeClientTest
         final List<Future<TaskEvent>> futures = new ArrayList<>();
         for (int i = 0; i < clientMaxRequests; i++)
         {
-            futures.add(client.tasks().create(topic, "bar").executeAsync());
+            futures.add(client.tasks().create(topic, "bar").send());
         }
 
         // when
@@ -199,7 +198,7 @@ public class ZeebeClientTest
         // then
         for (int i = 0; i < clientMaxRequests; i++)
         {
-            futures.add(client.tasks().create(topic, "bar").executeAsync());
+            futures.add(client.tasks().create(topic, "bar").send());
         }
     }
 
@@ -216,7 +215,7 @@ public class ZeebeClientTest
         final List<Future<TaskEvent>> futures = new ArrayList<>();
         for (int i = 0; i < clientMaxRequests; i++)
         {
-            futures.add(client.tasks().complete(baseEvent).executeAsync());
+            futures.add(client.tasks().complete(baseEvent).send());
         }
 
         // when
@@ -236,7 +235,7 @@ public class ZeebeClientTest
         // then
         for (int i = 0; i < clientMaxRequests; i++)
         {
-            futures.add(client.tasks().complete(baseEvent).executeAsync());
+            futures.add(client.tasks().complete(baseEvent).send());
         }
 
     }
@@ -256,12 +255,12 @@ public class ZeebeClientTest
 
         for (int i = 0; i < clientMaxRequests; i++)
         {
-            client.tasks().create(topic, "bar").executeAsync();
+            client.tasks().create(topic, "bar").send();
         }
 
         try
         {
-            client.tasks().create(topic, "bar").executeAsync();
+            client.tasks().create(topic, "bar").send();
             fail("should throw exception");
         }
         catch (Exception e)
@@ -389,7 +388,7 @@ public class ZeebeClientTest
         {
             client.tasks()
                   .complete(baseEvent)
-                  .executeAsync().get();
+                  .send().get();
 
             fail("should throw exception");
         }
