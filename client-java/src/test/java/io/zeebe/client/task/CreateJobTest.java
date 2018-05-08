@@ -17,6 +17,7 @@ package io.zeebe.client.task;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
+import static org.junit.Assert.fail;
 
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
@@ -30,19 +31,21 @@ import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 
 import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.event.TaskEvent;
+import io.zeebe.client.api.commands.CreateJobCommandStep1;
+import io.zeebe.client.api.events.JobEvent;
+import io.zeebe.client.api.events.JobEvent.JobState;
 import io.zeebe.client.impl.data.MsgPackConverter;
-import io.zeebe.client.impl.job.cmd.CreateTaskCommand;
 import io.zeebe.client.util.ClientRule;
 import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.clientapi.EventType;
 import io.zeebe.protocol.clientapi.ExecuteCommandRequestEncoder;
+import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.test.broker.protocol.brokerapi.ExecuteCommandRequest;
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
 import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 
-public class CreateTaskTest
+public class CreateJobTest
 {
 
     public ActorSchedulerRule schedulerRule = new ActorSchedulerRule();
@@ -70,13 +73,13 @@ public class CreateTaskTest
     public void shouldCreateTask()
     {
         // given
-        brokerRule.onExecuteCommandRequest(EventType.TASK_EVENT, "CREATE")
+        brokerRule.onExecuteCommandRequest(ValueType.JOB, JobIntent.CREATE)
             .respondWith()
             .key(123)
             .position(456)
+            .intent(JobIntent.CREATED)
             .value()
               .allOf((r) -> r.getCommand())
-              .put("state", "CREATED")
               .put("lockTime", Protocol.INSTANT_NULL_VALUE)
               .put("lockOwner", "")
               .done()
@@ -85,21 +88,23 @@ public class CreateTaskTest
         final String payload = "{\"foo\":\"bar\"}";
 
         // when
-        final TaskEvent taskEvent = clientRule.tasks()
-            .create(clientRule.getDefaultTopicName(), "fooType")
+        final JobEvent job = clientRule.jobClient()
+            .newCreateCommand()
+            .jobType("fooType")
             .retries(3)
             .addCustomHeader("beverage", "apple juice")
             .payload(payload)
-            .execute();
+            .send()
+            .join();
 
         // then
         final ExecuteCommandRequest request = brokerRule.getReceivedCommandRequests().get(0);
-        assertThat(request.eventType()).isEqualTo(EventType.TASK_EVENT);
+        assertThat(request.valueType()).isEqualTo(ValueType.JOB);
+        assertThat(request.intent()).isEqualTo(JobIntent.CREATE);
         assertThat(request.partitionId()).isEqualTo(StubBrokerRule.TEST_PARTITION_ID);
         assertThat(request.position()).isEqualTo(ExecuteCommandRequestEncoder.positionNullValue());
 
         assertThat(request.getCommand()).containsOnly(
-                entry("state", "CREATE"),
                 entry("retries", 3),
                 entry("type", "fooType"),
                 entry("headers", new HashMap<>()),
@@ -107,61 +112,63 @@ public class CreateTaskTest
                 entry("lockTime", Protocol.INSTANT_NULL_VALUE),
                 entry("payload", converter.convertToMsgPack(payload)));
 
-        assertThat(taskEvent.getMetadata().getKey()).isEqualTo(123L);
-        assertThat(taskEvent.getMetadata().getTopicName()).isEqualTo(StubBrokerRule.TEST_TOPIC_NAME);
-        assertThat(taskEvent.getMetadata().getPartitionId()).isEqualTo(StubBrokerRule.TEST_PARTITION_ID);
-        assertThat(taskEvent.getMetadata().getPosition()).isEqualTo(456);
+        assertThat(job.getKey()).isEqualTo(123L);
+        assertThat(job.getMetadata().getTopicName()).isEqualTo(StubBrokerRule.TEST_TOPIC_NAME);
+        assertThat(job.getMetadata().getPartitionId()).isEqualTo(StubBrokerRule.TEST_PARTITION_ID);
+        assertThat(job.getMetadata().getPosition()).isEqualTo(456);
 
-        assertThat(taskEvent.getState()).isEqualTo("CREATED");
-        assertThat(taskEvent.getHeaders()).isEmpty();
-        assertThat(taskEvent.getCustomHeaders()).containsOnly(entry("beverage", "apple juice"));
-        assertThat(taskEvent.getLockExpirationTime()).isNull();
-        assertThat(taskEvent.getLockOwner()).isEmpty();
-        assertThat(taskEvent.getRetries()).isEqualTo(3);
-        assertThat(taskEvent.getType()).isEqualTo("fooType");
-        assertThat(taskEvent.getPayload()).isEqualTo(payload);
+        assertThat(job.getState()).isEqualTo(JobState.CREATED);
+        assertThat(job.getHeaders()).isEmpty();
+        assertThat(job.getCustomHeaders()).containsOnly(entry("beverage", "apple juice"));
+        assertThat(job.getLockExpirationTime()).isNull();
+        assertThat(job.getLockOwner()).isEmpty();
+        assertThat(job.getRetries()).isEqualTo(3);
+        assertThat(job.getType()).isEqualTo("fooType");
+        assertThat(job.getPayload()).isEqualTo(payload);
     }
 
     @Test
     public void shouldCreateTaskWithDefaultValues()
     {
         // given
-        brokerRule.onExecuteCommandRequest(EventType.TASK_EVENT, "CREATE")
+        brokerRule.onExecuteCommandRequest(ValueType.JOB, JobIntent.CREATE)
             .respondWith()
             .key(123)
+            .intent(JobIntent.CREATED)
             .value()
               .allOf((r) -> r.getCommand())
-              .put("state", "CREATED")
               .put("headers", new HashMap<>())
               .put("payload", MsgPackUtil.encodeMsgPack(w -> w.packNil()).byteArray())
               .done()
             .register();
 
         // when
-        final TaskEvent taskEvent = clientRule.tasks()
-            .create(clientRule.getDefaultTopicName(), "fooType")
-            .execute();
+        final JobEvent job = clientRule.jobClient()
+            .newCreateCommand()
+            .jobType("fooType")
+            .send()
+            .join();
 
         // then
-        assertThat(taskEvent.getMetadata().getKey()).isEqualTo(123L);
-        assertThat(taskEvent.getMetadata().getTopicName()).isEqualTo(StubBrokerRule.TEST_TOPIC_NAME);
-        assertThat(taskEvent.getMetadata().getPartitionId()).isEqualTo(StubBrokerRule.TEST_PARTITION_ID);
+        assertThat(job.getMetadata().getKey()).isEqualTo(123L);
+        assertThat(job.getMetadata().getTopicName()).isEqualTo(StubBrokerRule.TEST_TOPIC_NAME);
+        assertThat(job.getMetadata().getPartitionId()).isEqualTo(StubBrokerRule.TEST_PARTITION_ID);
 
-        assertThat(taskEvent.getRetries()).isEqualTo(CreateTaskCommand.DEFAULT_RETRIES);
-        assertThat(taskEvent.getHeaders()).isEmpty();
-        assertThat(taskEvent.getPayload()).isEqualTo("null");
+        assertThat(job.getRetries()).isEqualTo(CreateJobCommandStep1.DEFAULT_RETRIES);
+        assertThat(job.getHeaders()).isEmpty();
+        assertThat(job.getPayload()).isEqualTo("null");
     }
 
     @Test
     public void shouldSetPayloadAsStream()
     {
         // given
-        brokerRule.onExecuteCommandRequest(EventType.TASK_EVENT, "CREATE")
+        brokerRule.onExecuteCommandRequest(ValueType.JOB, JobIntent.CREATE)
             .respondWith()
             .key(123)
+            .intent(JobIntent.CREATED)
             .value()
               .allOf((r) -> r.getCommand())
-              .put("state", "CREATED")
               .put("lockTime", Protocol.INSTANT_NULL_VALUE)
               .put("lockOwner", "")
               .done()
@@ -170,10 +177,11 @@ public class CreateTaskTest
         final String payload = "{\"foo\":\"bar\"}";
 
         // when
-        clientRule.tasks()
-            .create(clientRule.getDefaultTopicName(), "fooType")
+        clientRule.jobClient()
+            .newCreateCommand()
+            .jobType("fooType")
             .payload(new ByteArrayInputStream(payload.getBytes(StandardCharsets.UTF_8)))
-            .execute();
+            .send().join();
 
         // then
         final ExecuteCommandRequest request = brokerRule.getReceivedCommandRequests().get(0);
@@ -184,14 +192,16 @@ public class CreateTaskTest
     @Test
     public void shouldValidateTopicNameNotNull()
     {
-        // then
-        exception.expect(RuntimeException.class);
-        exception.expectMessage("topic must not be null");
+        fail("Check that this is covered somewhere else");
 
-        // when
-        clientRule.tasks()
-            .create(null, "fooType")
-            .execute();
+//        // then
+//        exception.expect(RuntimeException.class);
+//        exception.expectMessage("topic must not be null");
+//
+//        // when
+//        clientRule.tasks()
+//            .create(null, "fooType")
+//            .execute();
     }
 
     @Test
@@ -202,37 +212,25 @@ public class CreateTaskTest
         exception.expectMessage("type must not be null");
 
         // when
-        clientRule.tasks()
-            .create("topic", null)
-            .execute();
+        clientRule.jobClient()
+            .newCreateCommand()
+            .jobType(null)
+            .send();
     }
 
     @Test
     public void testValidateTopicNameNotEmpty()
     {
-        // given
-        final ZeebeClient client = clientRule.getClient();
-
-        // then
-        exception.expect(RuntimeException.class);
-        exception.expectMessage("topic must not be empty");
-
-        // when
-        client.tasks().create("", "foo").execute();
-    }
-
-    @Test
-    public void testValidateTopicNameNotNull()
-    {
-        // given
-        final ZeebeClient client = clientRule.getClient();
-
-        // then
-        exception.expect(RuntimeException.class);
-        exception.expectMessage("topic must not be null");
-
-        // when
-        client.tasks().create(null, "foo").execute();
+        fail("Check that this is covered somewhere else");
+//        // given
+//        final ZeebeClient client = clientRule.getClient();
+//
+//        // then
+//        exception.expect(RuntimeException.class);
+//        exception.expectMessage("topic must not be empty");
+//
+//        // when
+//        client.tasks().create("", "foo").execute();
     }
 
 }

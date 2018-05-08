@@ -19,11 +19,11 @@ import java.util.function.Consumer;
 
 import org.junit.rules.ExternalResource;
 
-import io.zeebe.client.TasksClient;
 import io.zeebe.client.TopicsClient;
 import io.zeebe.client.WorkflowsClient;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.ZeebeClientBuilder;
+import io.zeebe.client.api.clients.JobClient;
 import io.zeebe.client.impl.ZeebeClientBuilderImpl;
 import io.zeebe.client.impl.ZeebeClientImpl;
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
@@ -87,9 +87,9 @@ public class ClientRule extends ExternalResource
         return client.workflows();
     }
 
-    public TasksClient tasks()
+    public JobClient jobClient()
     {
-        return client.tasks();
+        return client.topicClient(getDefaultTopicName()).jobClient();
     }
 
     public String getDefaultTopicName()
